@@ -31,8 +31,9 @@ const BondsCalculator = () => {
 
   const calculateBondMetrics = () => {
     const couponFrequency = parseInt(formData.couponFrequency);
-    if (![1, 2, 4].includes(couponFrequency)) {
-      alert('Частота выплаты купона должна быть 1, 2 или 4');
+
+    if (couponFrequency < 1 || couponFrequency > 12) {
+      alert('Частота выплаты купона должна быть от 1 до 12 раз в год');
       return;
     }
 
@@ -57,8 +58,15 @@ const BondsCalculator = () => {
       return;
     }
 
+    // Расчет купона на одну выплату
+    const couponPerPayment = values.coupon / values.couponFrequency;
+    
+    // Текущая доходность с учетом частоты выплат
     const currentYield = (values.coupon / values.marketPrice) * 100;
-    const simpleYtm = (values.coupon + (values.nominal - values.marketPrice) / values.yearsToMaturity) / 
+    
+    // Доходность к погашению с учетом частоты выплат
+    const simpleYtm = ((couponPerPayment * values.couponFrequency) +
+                     (values.nominal - values.marketPrice) / values.yearsToMaturity) /
                      ((values.nominal + values.marketPrice) / 2) * 100;
     const icr = values.ebit / values.interestExpense;
     const deRatio = values.totalDebt / values.equity;
@@ -67,6 +75,7 @@ const BondsCalculator = () => {
     const quickRatio = (values.currentAssets - values.inventory) / values.currentLiabilities;
 
     setResults({
+      couponPerPayment,
       currentYield,
       simpleYtm,
       icr,
@@ -191,24 +200,24 @@ const BondsCalculator = () => {
             </div>
 
             <div>
-              <label 
+              <label
                 htmlFor="couponFrequency"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
                 Частота выплаты купона в год
               </label>
-              <select
+              <input
                 id="couponFrequency"
+                type="number"
                 name="couponFrequency"
                 value={formData.couponFrequency}
                 onChange={handleInputChange}
                 className="input-field"
-                title="Coupon Frequency - Как часто выплачиваются купоны в течение года"
-              >
-                <option value="1">1 раз в год</option>
-                <option value="2">2 раза в год</option>
-                <option value="4">4 раза в год</option>
-              </select>
+                placeholder="1"
+                min="1"
+                max="12"
+                title="Coupon Frequency - Количество выплат купона в течение года (от 1 до 12 раз в год)"
+              />
             </div>
           </div>
 
@@ -379,6 +388,10 @@ const BondsCalculator = () => {
           <div className="mt-8 space-y-6">
             <h3 className="text-xl font-semibold text-gray-800">Результаты анализа</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-gray-50 rounded-xl" title="Coupon Per Payment - Размер одной купонной выплаты">
+                <div className="text-sm text-gray-600 mb-1">Размер купона за 1 выплату</div>
+                <div className="text-xl font-semibold">{results.couponPerPayment.toFixed(2)}</div>
+              </div>
               <div className="p-4 bg-gray-50 rounded-xl" title="Current Yield - Текущая доходность облигации, отношение годового купона к рыночной цене">
                 <div className="text-sm text-gray-600 mb-1">Текущая доходность</div>
                 <div className="text-xl font-semibold">{results.currentYield.toFixed(2)}%</div>
